@@ -1,0 +1,10 @@
+{
+  "name": "Resilio Sync Add-on Repo",
+  "timestamp": 1695926400000,
+  "addons": {
+    "resiliosync": {
+      "repository": "https://github.com/SREbuilt/haos-addon-resiliosync",
+      "slug": "resiliosync"
+    }
+  }
+}
