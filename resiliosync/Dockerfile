@@ -1,54 +1,21 @@
-ARG BUILD_FROM=ghcr.io/hassio-addons/debian-base/aarch64:7.2.0
-# hadolint ignore=DL3006
-FROM ${BUILD_FROM}
+################################################################################
+# Home Assistant Supervisor Add-on Dockerfile
+#
+# This entire file replaces your old Dockerfile. It:
+#  1. Boots from the official Resilio Sync image
+#  2. Copies in your add-on “rootfs” hooks (run.sh, healthcheck, etc.)
+#  3. Marks the startup script as executable
+#  4. Uses that script as the container’s entrypoint
+################################################################################
 
-# Set shell
-SHELL ["/bin/bash", "-o", "pipefail", "-c"]
+# 1) Base image: official multi-arch Resilio Sync
+FROM resilio/sync:latest
 
-# Setup base system
-ARG BUILD_ARCH=aarch64
-ARG RELEASE
+# 2) Add Supervisor hooks (run.sh, healthcheck, etc.)
+COPY rootfs/ /
 
-RUN \
-    if [ "${BUILD_ARCH}" = "aarch64" ]; then ARCH="arm64"; fi \
-    && if [ "${BUILD_ARCH}" = "amd64" ]; then ARCH="amd64"; fi \
-    && if [ "${BUILD_ARCH}" = "armv7" ]; then ARCH="armhf"; fi \
-    && curl -o \
-    /tmp/sync.deb -L \
-        "https://download-cdn.resilio.com/${RELEASE}/Debian/resilio-sync_${RELEASE}-1_${ARCH}.deb" \
-    && dpkg -i \
-        /tmp/sync.deb \
-    && rm -rf \
-        /tmp/*
+# 3) Ensure the run script is executable
+RUN chmod a+x /run.sh
 
-# Copy root filesystem
-COPY rootfs /
-
-# Build arguments
-ARG BUILD_ARCH
-ARG BUILD_DATE
-ARG BUILD_DESCRIPTION
-ARG BUILD_NAME
-ARG BUILD_REF
-ARG BUILD_REPOSITORY
-ARG BUILD_VERSION
-
-# Labels
-LABEL \
-    io.hass.name="${BUILD_NAME}" \
-    io.hass.description="${BUILD_DESCRIPTION}" \
-    io.hass.arch="${BUILD_ARCH}" \
-    io.hass.type="addon" \
-    io.hass.version=${BUILD_VERSION} \
-    maintainer="Barış Özdağ" \
-    org.opencontainers.image.title="${BUILD_NAME}" \
-    org.opencontainers.image.description="${BUILD_DESCRIPTION}" \
-    org.opencontainers.image.vendor="barisozdag's Personal Home Assistant Add-ons" \
-    org.opencontainers.image.authors="Barış Özdağ" \
-    org.opencontainers.image.licenses="MIT" \
-    org.opencontainers.image.url="https://github.com/${BUILD_REPOSITORY}" \
-    org.opencontainers.image.source="https://github.com/${BUILD_REPOSITORY}" \
-    org.opencontainers.image.documentation="https://github.com/${BUILD_REPOSITORY}/blob/main/README.md" \
-    org.opencontainers.image.created=${BUILD_DATE} \
-    org.opencontainers.image.revision=${BUILD_REF} \
-    org.opencontainers.image.version=${BUILD_VERSION}
+# 4) Default command: invoke your run.sh to launch sync in HAOS mode
+CMD [ "/run.sh" ]
